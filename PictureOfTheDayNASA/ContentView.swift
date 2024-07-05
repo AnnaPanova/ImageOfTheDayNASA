@@ -8,67 +8,55 @@
 import Foundation
 import SwiftUI
 
+    
 struct ContentView: View {
+      @State private var date = Date.now
+      @State private var image : ImageNASA?
+      @State private var apiClient = APIClient()
+      @State private var imageURL: String = ""
     
-   @State private var selectedDate: String = "2016-10-01"
-    @State private var apiClient = APIClient()
-    @State private var image = ImageNASA()
-    @State private var imageURL: String = ""
-    
-    private func getImageURL() {
-        imageURL = "https://apod.nasa.gov/apod/image/1410/butterflyblue_hst_960.jpg"
+    func fetchImage() async {
+        do {
+            image = try await apiClient.getImageFomResponse(date: date) ?? nil
+        } catch {
+            print(error)
+        }
     }
-    
     
     var body: some View {
         return VStack {
-            dateView()
+            
+            // Date picker that allows to choose a date
+            DateView(date: $date)
                 .padding(20)
-            Button("Show me the image"){
-                getImageURL()
-                print("image url: \(imageURL)")
-                 print("I try")
+            
+            // Button that initiate an API request
+            Button("Show me the image") {
+                Task{
+                    do {
+                      try await fetchImage()
+                        print("Button was pressed, image url: \(image?.url ?? "No url") ")
+                    } catch {
+                        print(error)
+                    }
+                }
             }
             .padding(20)
             .buttonBorderShape(.roundedRectangle(radius: 20.0))
             .buttonStyle(.bordered)
             .foregroundColor(.black)
             
-            ImageView()
-              
-            Text("There will be description")
-                .padding(20)
+            // Image displays photo for selected date
+            ImageView(url: image?.url ?? imageURL)
             
-                  
-               
+            // Title of photo
+            Text("\(image?.title ?? "")")
+                .padding(20)
             Spacer()
         }
         .padding()
     }
 }
-
-struct ImageView: View {
-    var body: some View {
-        AsyncImage(url: URL(string:"https://apod.nasa.gov/apod/image/1410/butterflyblue_hst_960.jpg")) { image in
-            image.resizable()
-                .frame( maxWidth: .infinity, maxHeight: 350.0, alignment: .center)
-        } placeholder: {
-            Image(systemName: "sparkles")
-                .resizable()
-                .frame( maxWidth: .infinity, maxHeight: 350.0, alignment: .center)
-        }
-    }
-}
-
-
-// Defaults to today's date. Must be after 1995-06-16
-struct dateView: View {
-    var body: some View {
-        DatePicker("please, choose a date", selection: .constant(.now), displayedComponents: [.date])
-            
-    }
-}
-
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
